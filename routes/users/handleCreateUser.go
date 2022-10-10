@@ -13,6 +13,8 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	// Check body for password
 	password := r.FormValue("password")
+	username := r.FormValue("username")
+	email := r.FormValue("email")
 
 	responseBody := r.Body
 
@@ -23,9 +25,10 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	// encodedPassword := base64.StdEncoding.EncodeToString([]byte(password))
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
 	newUser := models.NewUserAccountRequest{
-		Name:     "Lars",
-		Email:    "larslokke@gmail.com",
+		Username: username,
+		Email:    email,
 		Password: hashedPassword,
+		Uid:      "someRandomUid123",
 	}
 	commands.CreateUser(newUser)
 	fmt.Println(newUser)

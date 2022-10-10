@@ -3,6 +3,7 @@ package routes
 import (
 	"net/http"
 
+	"github.com/TheLoGgI/middleware"
 	"github.com/TheLoGgI/models"
 	"github.com/TheLoGgI/routes/providers"
 	"github.com/TheLoGgI/routes/users"
@@ -25,10 +26,12 @@ func Root(server models.Server) {
 // 	}),
 // )
 
+//
+
 func Providers(server models.Server) {
 
-	server.Router.HandleFunc("/providers/refreshAuthToken", providers.RefreshAuthToken)
-	// server.Router.HandleFunc("/authorize/account", )
+	server.Router.HandleFunc("/providers/refreshAuthToken", middleware.AuthenticationMiddleware(providers.RefreshAuthToken))
+	server.Router.HandleFunc("/authorize/login", middleware.AuthenticationMiddleware(providers.Login))
 	// .Methods("POST")
 }
 

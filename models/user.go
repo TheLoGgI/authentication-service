@@ -7,7 +7,8 @@ type UserAccount struct {
 }
 
 type NewUserAccountRequest struct {
-	Name     string
+	Username string
 	Email    string
 	Password []byte
+	Uid      string
 }

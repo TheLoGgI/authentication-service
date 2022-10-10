@@ -16,11 +16,13 @@ import (
 // var mongoPassword = os.Getenv("MONGOPASS") // OomqdcOZ5HiNGhlW
 
 type User struct {
-	FirstName string `bson:"first_name,omitempty"`
-	LastName  string `bson:"last_name,omitempty"`
-	Username  string
-	Email     string
-	Uid       primitive.ObjectID
+	FirstName string             `bson:"firstName,omitempty"`
+	LastName  string             `bson:"lastName,omitempty"`
+	Username  string             `bson:"username,omitempty"`
+	Email     string             `json:"email" bson:"email, omitempty"`
+	Password  string             `json:"password" bson:"password, omitempty"`
+	Uid       string             `bson:"uid,omitempty"`
+	id        primitive.ObjectID `bson:"_id,omitempty"`
 }
 
 var globalClient *mongo.Client
@@ -112,4 +114,37 @@ func GetMongoDatabase() *mongo.Database {
 	}
 
 	return globalClient.Database("salvare")
+}
+
+// func HashPassword(password string) (string, error) {
+//     bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+//     return string(bytes), err
+// }
+
+// func CheckPasswordHash(password, hash string) bool {
+//     err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+//     return err == nil
+// }
+
+func ValidateDatabaseUser(username string, hashedPassword []byte) bool {
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+
+	db := globalClient.Database("salvare").Collection("users")
+
+	var foundUser User
+	err := db.FindOne(ctx, bson.D{
+		{Key: "username", Value: username},
+	}).Decode(&foundUser)
+
+	if err != nil {
+		fmt.Println(err)
+		fmt.Printf("Could not find user with username: %s", username)
+		return false
+	}
+
+	return true
+	// var passwordFailed = bcrypt.CompareHashAndPassword([]byte(foundUser.Password), hashedPassword)
+
+	// return passwordFailed == nil
+
 }

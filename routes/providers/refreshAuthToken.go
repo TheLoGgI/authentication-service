@@ -7,6 +7,9 @@ import (
 
 func RefreshAuthToken(w http.ResponseWriter, r *http.Request) {
 
+	// CORS Headers
+	w.Header().Set("Content-Type", "application/json")
+
 	// getting isAdmin from context and convert to bool
 	// adm := context.Get(r, "isAdmin").(bool)
 	adm := true

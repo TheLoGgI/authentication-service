@@ -105,12 +105,19 @@ func (j JWT) Create(ttl time.Duration, content interface{}) (string, error) {
 	}
 
 	now := time.Now().UTC()
-
+	// https://learn.microsoft.com/en-us/azure/active-directory/develop/id-tokens
 	claims := make(jwt.MapClaims)
-	claims["dat"] = content             // Our custom data.
-	claims["exp"] = now.Add(ttl).Unix() // The expiration time after which the token must be disregarded.
-	claims["iat"] = now.Unix()          // The time at which the token was issued.
-	claims["nbf"] = now.Unix()          // The time before which the token must be disregarded.
+	claims["aud"] = "identity"                 // Identifies the intended recipient of the token.
+	claims["tid"] = content                    // Represents the tenant that the user is signing in to
+	claims["iss"] = "https://lasseaakjaer.com" // Who created and signed this token
+	claims["name"] = "username"                // user's name
+	claims["exp"] = now.Add(ttl).Unix()        // The expiration time after which the token must be disregarded.
+	claims["iat"] = now.Unix()                 // The time at which the token was issued.
+	claims["nbf"] = now.Unix()                 // The time before which the token must be disregarded.
+	claims["kid"] = "1.0"                      // Specifies the thumbprint for the public key that can be used to validate this token's signature.
+	claims["alg"] = "RS256"                    // Indicates the algorithm that was used to sign the token. Example: "RS256"
+	claims["typ"] = "JWT"                      // Indicates the algorithm that was used to sign the token. Example: "RS256"
+	claims["ver"] = "1.0"                      // Version
 
 	token, err := jwt.NewWithClaims(jwt.SigningMethodRS256, claims).SignedString(key)
 	if err != nil {
@@ -145,6 +152,8 @@ func (j JWT) Validate(token string) (interface{}, error) {
 	return claims["dat"], nil
 }
 
+const TokenMaxAge = 60 * 60 * 10 /* 10 mins */
+
 // http://www.inanzzz.com/index.php/post/kdl9/creating-and-validating-a-jwt-rsa-token-in-golang
 func Login(w http.ResponseWriter, r *http.Request) {
 
@@ -156,24 +165,14 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	// w.Header().Set("Access-Control-Allow-Origin", "https://foo.example")
 	// w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
 	// w.Header().Set("Access-Control-Allow-Headers", "X-PINGOTHER, Content-Type")
-	// w.Header().Set("Access-Control-Max-Age", "86400")
-	// w.Header().Set("Keep-Alive", "timeout=2, max=100")
-	// w.Header().Set("Connection", "Keep-Alive")
-	// w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Max-Age", fmt.Sprintf("%v", TokenMaxAge))
+	w.Header().Set("Content-Type", "application/json")
 
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
 
 	// Declare the expiration time of the token
 	// here, we have kept it as 5 minutes
 	expirationTime := time.Now().Add(5 * time.Minute)
-	// Create the JWT claims, which includes the username and expiry time
-	// claims := &Claims{
-	// 	Username: "testing",
-	// 	StandardClaims: jwt.StandardClaims{
-	// 		// In JWT, the expiry time is expressed as unix milliseconds
-	// 		ExpiresAt: expirationTime.Unix(),
-	// 	},
-	// }
 
 	prvKey, privateErr := ioutil.ReadFile("cert/rsa.private")
 	if privateErr != nil {
@@ -187,13 +186,12 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	// Declare the token with the algorithm used for signing, and the claims
 	// token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	token := NewJWT(prvKey, pubKey)
-	var tokenString, err = token.Create(time.Hour, "some content")
+	var tokenString, err = token.Create(TokenMaxAge, "some content")
 	if err != nil {
 		log.Fatalln(err)
 		// If there is an error in creating the JWT return an internal server error
 		w.WriteHeader(http.StatusInternalServerError)
 	}
-	fmt.Println("TOKEN:", token)
 
 	// // 2. Validate an existing JWT token.
 	// content, err := jwtToken.Validate(tok)
@@ -210,9 +208,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		Expires:  expirationTime,
 		HttpOnly: true,
 		// Path:     "/",
-		// MaxAge:   8600,
+		MaxAge: TokenMaxAge,
 	})
-	// w.Header().Set("Set-Cookie", "id=a3fWa; Expires=Thu, 21 Oct 2021 07:28:00 GMT; Secure; HttpOnly")
 
 	w.Write([]byte("Hello wold"))
 }

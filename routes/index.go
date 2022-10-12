@@ -37,5 +37,5 @@ func Providers(server models.Server) {
 
 func Users(server models.Server) {
 
-	server.Router.HandleFunc("/create/user", users.CreateUser)
+	server.Router.HandleFunc("/create/user", users.CreateUser).Methods("POST") /* Require HTTPS */
 }

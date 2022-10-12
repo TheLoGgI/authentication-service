@@ -9,15 +9,14 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func GetUser(uid string) models.UserAccount {
+func GetUser(uid string) models.User {
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	collection := database.MongoCollection()
 
-	findFilter := bson.D{
+	var foundUser models.User
+	cursor := collection.FindOne(ctx, bson.D{
 		{Key: "_id", Value: uid},
-	}
-	var foundUser models.UserAccount
-	cursor := collection.FindOne(ctx, findFilter)
+	})
 	cursor.Decode(foundUser)
 	err := cursor.Err()
 

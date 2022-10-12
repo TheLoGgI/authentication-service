@@ -11,7 +11,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-const Port string = "3000"
+const Port string = "5000"
 
 // for global use (using a http.Handler!) - https://gist.github.com/AxelRHD/2344cc1105afc06723b363f21486dec8
 func logClients(next http.Handler) http.Handler {

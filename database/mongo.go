@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/TheLoGgI/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -14,16 +15,6 @@ import (
 
 // Connection URI
 // var mongoPassword = os.Getenv("MONGOPASS") // OomqdcOZ5HiNGhlW
-
-type User struct {
-	FirstName string             `bson:"firstName,omitempty"`
-	LastName  string             `bson:"lastName,omitempty"`
-	Username  string             `bson:"username,omitempty"`
-	Email     string             `json:"email" bson:"email, omitempty"`
-	Password  string             `json:"password" bson:"password, omitempty"`
-	Uid       string             `bson:"uid,omitempty"`
-	id        primitive.ObjectID `bson:"_id,omitempty"`
-}
 
 var globalClient *mongo.Client
 
@@ -131,7 +122,7 @@ func ValidateDatabaseUser(username string, hashedPassword []byte) bool {
 
 	db := globalClient.Database("salvare").Collection("users")
 
-	var foundUser User
+	var foundUser models.User
 	err := db.FindOne(ctx, bson.D{
 		{Key: "username", Value: username},
 	}).Decode(&foundUser)

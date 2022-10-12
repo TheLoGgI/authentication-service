@@ -2,7 +2,7 @@ package commands
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"time"
 
 	"github.com/TheLoGgI/database"
@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func CreateUser(newUser models.NewUserAccountRequest) {
+func CreateUser(newUser models.NewUserAccountRequest) models.User {
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	collection := database.MongoCollection()
 
@@ -21,7 +21,15 @@ func CreateUser(newUser models.NewUserAccountRequest) {
 	if err != nil {
 		panic(err)
 	}
-	userUid := cursor.InsertedID
-	fmt.Printf("new User created with %s", userUid)
 
+	userUid := cursor.InsertedID
+	log.Printf("New User created with %s \n", userUid)
+	var newCreatedUser models.User
+	userCursor := collection.FindOne(ctx, bson.D{
+		{Key: "uid", Value: userUid},
+	})
+	userCursor.Decode(newCreatedUser)
+	log.Println(newCreatedUser)
+
+	return newCreatedUser
 }

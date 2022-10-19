@@ -1,6 +1,8 @@
 package models
 
 import (
+	"net/http"
+
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -8,5 +10,6 @@ import (
 type Server struct {
 	Database *mongo.Database
 	Router   *mux.Router
+	Http     *http.Server
 	// email  EmailSender
 }

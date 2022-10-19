@@ -1,22 +1,11 @@
 package routes
 
 import (
-	"net/http"
-
 	"github.com/TheLoGgI/middleware"
 	"github.com/TheLoGgI/models"
 	"github.com/TheLoGgI/routes/providers"
 	"github.com/TheLoGgI/routes/users"
 )
-
-func Root(server models.Server) {
-
-	// Hosting static files
-	path := http.Dir("../static")
-	fileServer := http.FileServer(path)
-	server.Router.Handle("/", fileServer)
-
-}
 
 // middleware.EnsureValidToken()(
 // 	http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

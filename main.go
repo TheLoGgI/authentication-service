@@ -12,7 +12,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-const Port string = "5000"
+const Port string = "3000"
 
 // for global use (using a http.Handler!) - https://gist.github.com/AxelRHD/2344cc1105afc06723b363f21486dec8
 func logClients(next http.Handler) http.Handler {
@@ -28,6 +28,7 @@ func createServer() models.Server {
 
 	router := mux.NewRouter()
 	database := database.GetMongoDatabase()
+	// router.Use(mux.CORSMethodMiddleware(router))
 
 	src := &http.Server{
 		Handler: router,
@@ -36,9 +37,6 @@ func createServer() models.Server {
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
-
-	// This will serve files under http://localhost:Port/<filename>
-	router.Handle("/", http.FileServer(http.Dir("static")))
 
 	server := models.Server{
 		Database: database,
@@ -52,28 +50,18 @@ func createServer() models.Server {
 func Root(server models.Server) {
 
 	// Hosting static files
-	path := http.Dir("../static")
-	fileServer := http.FileServer(path)
-	server.Router.Handle("/", fileServer)
+	// This will serve files under http://localhost:Port/<filename>
+	server.Router.Handle("/", http.FileServer(http.Dir("static")))
 
 }
 
 func main() {
 
-	// var password string = "sometoehrpassworsd"
-	// hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
-	// otherhasedpassword, _ := bcrypt.GenerateFromPassword([]byte("sometoehrpassworsd"), bcrypt.MinCost)
-
-	// fmt.Println(hashedPassword)
-
-	// var is = bcrypt.CompareHashAndPassword(otherhasedpassword, hashedPassword)
-	// fmt.Println(is)
-
 	// Create server
 	server := createServer()
 
-	// server.Router.Use(logClients)
 	// Routes
+	Root(server)
 	routes.Providers(server)
 	routes.Users(server)
 

@@ -11,5 +11,4 @@ type Server struct {
 	Database *mongo.Database
 	Router   *mux.Router
 	Http     *http.Server
-	// email  EmailSender
 }

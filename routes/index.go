@@ -1,10 +1,12 @@
 package routes
 
 import (
-	"github.com/TheLoGgI/middleware"
+	"net/http"
+
 	"github.com/TheLoGgI/models"
 	"github.com/TheLoGgI/routes/providers"
 	"github.com/TheLoGgI/routes/users"
+	"github.com/gorilla/mux"
 )
 
 // middleware.EnsureValidToken()(
@@ -19,9 +21,15 @@ import (
 
 func Providers(server models.Server) {
 
-	server.Router.HandleFunc("/providers/refreshAuthToken", middleware.AuthenticationMiddleware(providers.RefreshAuthToken))
-	server.Router.HandleFunc("/authorize/login", middleware.AuthenticationMiddleware(providers.Login))
+	// Testing
+	server.Router.HandleFunc("/cookie/login", providers.CookieAuthLogin).Methods(http.MethodPost)
+	server.Router.Use(mux.CORSMethodMiddleware(server.Router))
+	// server.Router.HandleFunc("/providers/refreshAuthToken", middleware.AuthenticationMiddleware(providers.RefreshAuthToken))
+	// server.Router.HandleFunc("/authorize/login", middleware.AuthenticationMiddleware(providers.Login))
 	// .Methods("POST")
+
+	// WebAuthn
+	// server.Router.HandleFunc("/webautn/register", middleware.AuthenticationMiddleware(providers.Login))
 }
 
 func Users(server models.Server) {

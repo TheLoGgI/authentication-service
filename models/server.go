@@ -3,12 +3,12 @@ package models
 import (
 	"net/http"
 
-	"github.com/gorilla/mux"
+	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type Server struct {
 	Database *mongo.Database
-	Router   *mux.Router
+	App      *fiber.App
 	Http     *http.Server
 }

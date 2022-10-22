@@ -11,7 +11,7 @@ type User struct {
 	Username  string             `bson:"username,omitempty"`
 	Email     string             `json:"email" bson:"email, omitempty"`
 	Password  string             `json:"password" bson:"password, omitempty"`
-	Uid       string             `bson:"uid,omitempty"`
+	Uid       uuid.UUID          `bson:"uid,omitempty"`
 	EntryId   primitive.ObjectID `bson:"_id,omitempty"`
 }
 

@@ -5,36 +5,33 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/TheLoGgI/models"
 	"github.com/TheLoGgI/queries"
+	"github.com/gofiber/fiber/v2"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func CookieAuthLogin(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Method: " + r.Method)
+func deleteSessionId(user models.User) {
+	time.Sleep(time.Minute * 2)
+	fmt.Println("Go routine is awake")
+
+	queries.RemoveSessionCookieForUser(user)
+}
+
+func CookieAuthLogin(c *fiber.Ctx) error {
+	fmt.Println("Method: " + c.Method())
 
 	// Content Request Headers
-	w.Header().Set("Content-Type", "application/json")
-	// w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 
 	// CORS Headers
-	// w.Header().Set("Access-Control-Allow-Credentials", "false")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Headers", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "*")
-	// w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3001")
-	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Access-Control-Request-Method, Origin, Accept")
-	// w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	// w.Header().Set("Access-Control-Max-Age", "86400")
 
 	// Preflight Request Headers (CORS)
-	// w.Header().Set("Access-Control-Request-Headers", "Content-Type, Access-Control-Request-Method, Origin")
-	// w.Header().Set("Access-Control-Request-Method", http.MethodPost)
-	// w.Header().Set("Origin", "http://localhost:3000")
-	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+
+	fmt.Println(c.ClientHelloInfo())
 
 	// HTTPS is encrypted
-	password := r.FormValue("password")
-	email := r.FormValue("email")
+	password := c.FormValue("password")
+	email := c.FormValue("email")
 
 	fmt.Println("password: ( " + password + " )")
 	fmt.Println("email: ( " + email + " )")
@@ -49,8 +46,7 @@ func CookieAuthLogin(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(user)
 
 	if userError != nil {
-		w.WriteHeader(http.StatusNotFound)
-		fmt.Fprint(w)
+		return c.SendStatus(http.StatusNotFound)
 	}
 
 	hashedPasswordsDidNotMatch := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
@@ -59,28 +55,43 @@ func CookieAuthLogin(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(hashedPasswordsDidNotMatch)
 
 	if hashedPasswordsDidNotMatch != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Password and username din't match\n"))
-		return
+		c.SendStatus(http.StatusBadRequest)
+		return c.SendString("Password and username din't match\n")
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     "token",
-		Value:    fmt.Sprintf("usr:%v", user.Username),
+	sessionId, sessionIdError := queries.CreateSessionCookieForUser(user)
+
+	fmt.Println("sessionId: " + sessionId)
+
+	if sessionIdError != nil {
+		c.SendStatus(http.StatusBadRequest)
+	}
+
+	c.Cookie(&fiber.Cookie{
+		Name:     "CookieAuthToken",
+		Value:    sessionId,
 		Expires:  time.Now().Add(5 * time.Minute),
-		HttpOnly: true,
-		// Path:     "/",
-		MaxAge: 60 * 60 * 10,
+		HTTPOnly: true,
+		Secure:   true,
+		MaxAge:   60 * 30, /* 30 secs */
 	})
 
-	w.WriteHeader(http.StatusOK)
+	c.Cookie(&fiber.Cookie{
+		Name:     "userUid",
+		Value:    user.Uid.String(),
+		Expires:  time.Now().Add(5 * time.Minute),
+		HTTPOnly: false,
+		Secure:   true,
+		MaxAge:   60 * 30, /* 30 secs */
+	})
 
-	fmt.Println("response: ")
-	fmt.Println(w.Header().Values("status"))
-	// fmt.Println(jsonResp)
-	w.Write([]byte("{\"message\":\"Status All Okay\"}"))
+	// Deletes sessionId of user after 10 mins, e.g User can no longer validate
+	go deleteSessionId(user)
 
-	// fmt.Fprintf(w, "User %v logged in", user.Username)
+	c.SendStatus(http.StatusOK)
 
-	// w.Write([]byte("Ending"))
+	return c.JSON(fiber.Map{
+		"sessionId": sessionId,
+	})
+
 }

@@ -10,12 +10,13 @@ import (
 	"github.com/TheLoGgI/commands"
 	"github.com/TheLoGgI/database"
 	"github.com/TheLoGgI/models"
+	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func CreateUser(w http.ResponseWriter, r *http.Request) {
+func CreateUser(c *fiber.Ctx) error {
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	collection := database.MongoCollection()
 
@@ -23,9 +24,9 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	// authentication ID
 
 	// Check body for password
-	password := r.FormValue("password")
-	username := r.FormValue("username")
-	email := r.FormValue("email")
+	password := c.FormValue("password")
+	username := c.FormValue("username")
+	email := c.FormValue("email")
 
 	// Check email registration
 	var foundEmailUser models.User
@@ -35,9 +36,9 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	if (foundEmailUser != models.User{}) {
 		errMsg := fmt.Sprintf("User with email already exists: %s", foundEmailUser.Username)
-		http.Error(w, errMsg, http.StatusBadRequest)
-		w.Write([]byte(`{"error" : "400", "message":"User was not Created"}`))
-		return
+
+		c.SendStatus(http.StatusBadRequest)
+		return c.SendString(errMsg)
 	}
 
 	// Create hashed password
@@ -52,7 +53,9 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	// Create User in database
 	commands.CreateUser(newUser)
 
-	w.Write([]byte(`{"message":"User Created"}`))
+	return c.JSON(fiber.Map{
+		"message": "User Created",
+	})
 
 }
 

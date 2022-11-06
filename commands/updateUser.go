@@ -6,22 +6,26 @@ import (
 	"time"
 
 	"github.com/TheLoGgI/database"
-	"github.com/TheLoGgI/models"
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func UpdateUser(user models.User) {
+func UpdateUser(userUid uuid.UUID, updatedUserModel bson.D) {
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	collection := database.MongoCollection()
 
-	updateUserBson, _ := bson.Marshal(user)
+	var updatedDocument bson.M
+	filter := bson.D{{Key: "uid", Value: userUid}}
 
-	cursor, err := collection.UpdateByID(ctx, user.Uid, updateUserBson)
+	err := collection.FindOneAndUpdate(ctx, filter, updatedUserModel).Decode(&updatedDocument)
+
+	// cursor, err := collection.UpdateByID(ctx, userUid.String(), updatedUserModel)
 
 	if err != nil {
+		fmt.Println("Update User Failed with userUid: " + userUid.String())
 		panic(err)
 	}
-	userUid := cursor.UpsertedID
-	fmt.Printf("User with Uid: %s was updated", userUid)
+
+	fmt.Println(updatedDocument)
 
 }

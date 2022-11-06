@@ -10,9 +10,15 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+type defaultUser struct {
+	id []byte
+}
+
 func CreateUser(newUser models.NewUserAccountRequest) models.User {
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	collection := database.MongoCollection()
+
+	// var newUserWithAuthn {}interface = newUser
 
 	newUserBson, _ := bson.Marshal(newUser)
 

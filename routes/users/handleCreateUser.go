@@ -16,45 +16,75 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type PublicKeyCredentialSource struct {
+	Type       []byte // whose value is of PublicKeyCredentialType, defaulting to public-key.
+	Id         string //A Credential ID.
+	PrivateKey []byte // The credential private key.
+	RpId       string // The Relying Party Identifier, for the Relying Party this public key credential source is scoped to.
+	UserHandle func() // The user handle associated when this public key credential source was created. This item is nullable.
+}
+
+type CreateUserParams struct {
+	Username string `json:"username" form:"username"`
+	Password string `json:"password" form:"password"`
+	Email    string `json:"email" form:"email" bson:"email"`
+}
+
+const emptyUserString = "00000000-0000-0000-0000-000000000000"
+
 func CreateUser(c *fiber.Ctx) error {
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	collection := database.MongoCollection()
 
-	// TODO: Check registration Methods Google, Github, Facebook, Login Creds
-	// authentication ID
-
 	// Check body for password
-	password := c.FormValue("password")
-	username := c.FormValue("username")
-	email := c.FormValue("email")
+	formData := new(CreateUserParams)
+	c.BodyParser(&formData)
+
+	fmt.Println(formData)
 
 	// Check email registration
 	var foundEmailUser models.User
 	collection.FindOne(ctx, bson.D{
-		{Key: "email", Value: strings.TrimSpace(email)},
+		{Key: "email", Value: strings.TrimSpace(formData.Email)},
 	}).Decode(&foundEmailUser)
 
-	if (foundEmailUser != models.User{}) {
+	if foundEmailUser.Uid.String() != emptyUserString {
 		errMsg := fmt.Sprintf("User with email already exists: %s", foundEmailUser.Username)
 
 		c.SendStatus(http.StatusBadRequest)
-		return c.SendString(errMsg)
+		return c.JSON(fiber.Map{
+			"error": errMsg,
+		})
 	}
 
+	// pubKey, publicErr := ioutil.ReadFile("cert/rsa.public")
+	// if publicErr != nil {
+	// 	log.Fatalln(publicErr)
+	// }
+
 	// Create hashed password
-	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(formData.Password), bcrypt.MinCost)
 	newUser := models.NewUserAccountRequest{
-		Username: username,
-		Email:    email,
+		Username: formData.Username,
+		Email:    formData.Email,
 		Password: hashedPassword,
 		Uid:      uuid.New(),
+		// Credential: webauthn.Credential{
+		// 	ID: "",
+		// 	PublicKey: pubKey,
+		// 	AttestationType: "",
+		// 	Authenticator: ""
+		// },
 	}
 
 	// Create User in database
 	commands.CreateUser(newUser)
 
+	c.SendStatus(http.StatusOK)
 	return c.JSON(fiber.Map{
-		"message": "User Created",
+		"message":    "User Created",
+		"status":     200,
+		"statusText": "OK",
 	})
 
 }

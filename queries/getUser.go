@@ -9,6 +9,7 @@ import (
 
 	"github.com/TheLoGgI/database"
 	"github.com/TheLoGgI/models"
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -16,12 +17,18 @@ func GetUser(uid string) (models.User, error) {
 	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	collection := database.MongoCollection()
 
+	var userUid = uuid.MustParse(uid)
+
 	var foundUser models.User
-	cursor := collection.FindOne(ctx, bson.D{
-		{Key: "_id", Value: uid},
-	})
-	cursor.Decode(&foundUser)
-	err := cursor.Err()
+	err := collection.FindOne(ctx, bson.D{
+		{Key: "uid", Value: userUid},
+	}).Decode(&foundUser)
+
+	if err != nil {
+		fmt.Println(err)
+		fmt.Printf("Could not find user with user with uid: %s", uid)
+		return foundUser, err
+	}
 
 	return foundUser, err
 }

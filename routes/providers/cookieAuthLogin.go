@@ -33,26 +33,14 @@ func CookieAuthLogin(c *fiber.Ctx) error {
 	password := c.FormValue("password")
 	email := c.FormValue("email")
 
-	fmt.Println("password: ( " + password + " )")
-	fmt.Println("email: ( " + email + " )")
-
 	// Find user
 	user, userError := queries.GetUserWithEmail(email)
-
-	fmt.Println("userError: ")
-	fmt.Println(userError)
-	fmt.Println("------------------------------------")
-	fmt.Println("user: ")
-	fmt.Println(user)
 
 	if userError != nil {
 		return c.SendStatus(http.StatusNotFound)
 	}
 
 	hashedPasswordsDidNotMatch := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-
-	fmt.Println("hashedPasswordsDidNotMatch: ")
-	fmt.Println(hashedPasswordsDidNotMatch)
 
 	if hashedPasswordsDidNotMatch != nil {
 		c.SendStatus(http.StatusBadRequest)
